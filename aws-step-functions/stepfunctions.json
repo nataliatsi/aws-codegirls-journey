@@ -1,0 +1,299 @@
+{
+  "Comment": "Distributed map that processes bulk order in JSON object format through StateInput using orderId as unique identifier",
+  "QueryLanguage": "JSONata",
+  "StartAt": "InjectSampleOrders",
+  "States": {
+    "InjectSampleOrders": {
+      "Type": "Pass",
+      "Assign": {
+        "BatchId": "batch-123",
+        "Metadata": {
+          "source": "test"
+        },
+        "PricingRules": {
+          "electronics": {
+            "multiplier": 1.2
+          },
+          "books": {
+            "multiplier": 1.1
+          }
+        },
+        "Orders": {
+          "order1": {
+            "Value": {
+              "orderId": "order1",
+              "customerId": "cust1",
+              "items": [
+                {
+                  "name": "Laptop",
+                  "category": "electronics",
+                  "price": 1000,
+                  "quantity": 1
+                }
+              ]
+            }
+          },
+          "order2": {
+            "Value": {
+              "orderId": "order2",
+              "customerId": "cust2",
+              "items": [
+                {
+                  "name": "Mouse",
+                  "category": "electronics",
+                  "price": 50,
+                  "quantity": 2
+                }
+              ]
+            }
+          },
+          "order3": {
+            "Value": {
+              "orderId": "order3",
+              "customerId": "cust3"
+            }
+          },
+          "order4": {
+            "Value": {
+              "orderId": "order4",
+              "customerId": "cust4",
+              "items": null
+            }
+          },
+          "order5": {
+            "Value": {
+              "orderId": "order5",
+              "customerId": "cust5",
+              "items": [
+                {
+                  "name": "Keyboard",
+                  "category": "electronics",
+                  "price": 80,
+                  "quantity": 1
+                }
+              ]
+            }
+          },
+          "order6": {
+            "Value": {
+              "orderId": "order6",
+              "customerId": "cust6",
+              "items": "not-an-array"
+            }
+          },
+          "order7": {
+            "Value": {
+              "orderId": "order7",
+              "customerId": "cust7",
+              "items": [
+                {
+                  "name": "Monitor",
+                  "category": "electronics",
+                  "price": 300,
+                  "quantity": 1
+                }
+              ]
+            }
+          },
+          "order8": {
+            "Value": {
+              "orderId": "order8",
+              "customerId": "cust8",
+              "items": [
+                {
+                  "name": "Chair",
+                  "category": "furniture",
+                  "price": 150,
+                  "quantity": 2
+                }
+              ]
+            }
+          },
+          "order9": {
+            "Value": {
+              "orderId": "order9",
+              "customerId": "cust9",
+              "items": [
+                {
+                  "name": "Desk",
+                  "category": "furniture",
+                  "price": 250,
+                  "quantity": 1
+                }
+              ]
+            }
+          },
+          "order10": {
+            "Value": {
+              "orderId": "order10",
+              "customerId": "cust10",
+              "items": [
+                {
+                  "name": "Headphones",
+                  "category": "electronics",
+                  "price": 100,
+                  "quantity": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "Next": "ValidateBulkOrder"
+    },
+    "ValidateBulkOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "arn:aws:lambda:us-east-1:156455296398:function:StepFunctionsSample-Distr-BulkOrderValidatorFuncti-2UuRuRMmXix9",
+        "Payload": {
+          "batchId": "{% $BatchId %}",
+          "metadata": "{% $Metadata %}",
+          "pricingRules": "{% $PricingRules %}",
+          "Orders": "{% $Orders %}"
+        }
+      },
+      "Assign": {
+        "ValidationResult": "{% $states.result %}"
+      },
+      "Next": "ProcessOrders"
+    },
+    "ProcessOrders": {
+      "Type": "Map",
+      "Items": "{% $ValidationResult.Payload.Orders ~> $each(function($v, $k) { {'Key': $k, 'Value': $v.Value, 'BatchId': $BatchId, 'Metadata': $Metadata, 'PricingRules': $PricingRules} }) %}",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "InitializeVariables",
+        "States": {
+          "InitializeVariables": {
+            "Type": "Pass",
+            "Assign": {
+              "ItemBatchId": "{% $states.input.BatchId %}",
+              "ItemMetadata": "{% $states.input.Metadata %}",
+              "ItemPricingRules": "{% $states.input.PricingRules %}"
+            },
+            "Next": "CheckInventory"
+          },
+          "CheckInventory": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Arguments": {
+              "FunctionName": "arn:aws:lambda:us-east-1:156455296398:function:StepFunctionsSample-Distr-InventoryCheckerFunction-sVDqm36EcQ2p",
+              "Payload": {
+                "order": "{% $states.input.Value %}",
+                "orderId": "{% $states.input.Key %}",
+                "metadata": "{% $ItemMetadata %}"
+              }
+            },
+            "Assign": {
+              "inventoryResult": "{% $states.result.Payload %}"
+            },
+            "Next": "ApplyPricingRules"
+          },
+          "ApplyPricingRules": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Arguments": {
+              "FunctionName": "arn:aws:lambda:us-east-1:156455296398:function:StepFunctionsSample-Distr-PricingCalculatorFunctio-euBLrjxaLDUJ",
+              "Payload": {
+                "order": "{% $inventoryResult.order %}",
+                "orderId": "{% $inventoryResult.orderId %}",
+                "pricingRules": "{% $ItemPricingRules %}",
+                "inventoryResult": "{% $inventoryResult.inventoryResult %}"
+              }
+            },
+            "Assign": {
+              "pricingResult": "{% $states.result.Payload %}"
+            },
+            "Next": "RouteOrder"
+          },
+          "RouteOrder": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "Condition": "{% $inventoryResult.inventoryResult.status = 'AVAILABLE' %}",
+                "Next": "ProcessValidOrder"
+              }
+            ],
+            "Default": "LogInventoryIssue"
+          },
+          "ProcessValidOrder": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:updateItem",
+            "Arguments": {
+              "TableName": "StepFunctionsSample-DistributedMapBulkCustomerOrderProcessing-054a9b2e-34d9-47b0-8a4b-1fd90a2fd317-BulkCustomerOrdersTable-HN6EMDFNV67A",
+              "Key": {
+                "OrderId": {
+                  "S": "{% $string($pricingResult.orderId) %}"
+                }
+              },
+              "UpdateExpression": "SET #status = :s, #price = :p",
+              "ExpressionAttributeNames": {
+                "#status": "Status",
+                "#price": "FinalPrice"
+              },
+              "ExpressionAttributeValues": {
+                ":s": {
+                  "S": "PROCESSING"
+                },
+                ":p": {
+                  "N": "{% $string($pricingResult.calculatedPrice.total) %}"
+                }
+              }
+            },
+            "End": true
+          },
+          "LogInventoryIssue": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:putItem",
+            "Arguments": {
+              "TableName": "StepFunctionsSample-DistributedMapBulkCustomerOrderProcessing-054a9b2e-34d9-47b0-8a4b-1fd90a2fd317-BulkCustomerOrderIssuesTable-YY67HN2O955O",
+              "Item": {
+                "IssueId": {
+                  "S": "{% $ItemBatchId & '-' & $inventoryResult.orderId %}"
+                },
+                "BatchId": {
+                  "S": "{% $ItemBatchId %}"
+                },
+                "OrderId": {
+                  "S": "{% $inventoryResult.orderId %}"
+                },
+                "IssueType": {
+                  "S": "INVENTORY_SHORTAGE"
+                },
+                "Details": {
+                  "S": "{% $string($inventoryResult.inventoryResult) %}"
+                },
+                "Timestamp": {
+                  "S": "{% $states.context.State.EnteredTime %}"
+                },
+                "Status": {
+                  "S": "PENDING"
+                }
+              }
+            },
+            "End": true
+          }
+        }
+      },
+      "MaxConcurrency": 10,
+      "Next": "GenerateBatchSummary"
+    },
+    "GenerateBatchSummary": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "arn:aws:lambda:us-east-1:156455296398:function:StepFunctionsSample-Distri-BatchSummarizerFunction-jFoPoJfjLGFh",
+        "Payload": {
+          "batchId": "{% $BatchId %}",
+          "metadata": "{% $Metadata %}",
+          "results": "{% $states.input %}"
+        }
+      },
+      "End": true
+    }
+  }
+}

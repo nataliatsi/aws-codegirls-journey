@@ -1,48 +1,44 @@
-# AWS Diagram Certificates
+<h1 align="center">AWS CodeGirls Journey ☁️</h1>
 
-## 📌 Proposta do Projeto
+<p align="center"><em>Central de desafios, anotações e aprendizados do Bootcamp DIO Code Girls na AWS</em></p>
 
-Este projeto foi desenvolvido como parte do desafio da **DIO (Santander Code Girls)**, cujo objetivo é **escolher um case de aplicação e modelar sua arquitetura na AWS**.
-
-O case escolhido foi a modelagem de uma plataforma de **geração e envio automático de certificados digitais**, aproveitando serviços **serverless** e recursos nativos da nuvem para criar uma solução escalável, segura e de baixo custo.
-
----
-
-## 🔄 Fluxo da Arquitetura
-
-1. **Upload de arquivo pelo cliente**
-
-   * O cliente acessa a interface web, realiza login e envia um arquivo (CSV, JSON ou XLSX).
-   * O arquivo é armazenado em um bucket **Amazon S3**.
-
-2. **Processamento inicial (Lambda 1)**
-
-   * Um **AWS Lambda (Java)** é acionado pelo upload.
-   * Ele processa os dados e salva as informações de usuários, eventos e certificados no **Amazon RDS** (controle, consultas e auditoria).
-   * Em seguida, publica mensagens na fila **Amazon SQS** para dar continuidade ao fluxo.
-
-3. **Geração e envio de certificados (Lambda 2)**
-
-   * Outro **AWS Lambda** consome mensagens da **SQS**.
-   * Ele gera os certificados digitais, salva em um bucket S3 específico e envia um e-mail com o link de acesso ao usuário.
-
-4. **Acesso ao certificado**
-
-   * O usuário acessa o link recebido por e-mail e realiza o download do certificado armazenado no **S3**.
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Em%20Evolução-2496ED?style=flat">
+  <img src="https://img.shields.io/badge/AWS-Cloud-2496ED?style=flat&logo=amazon-aws&logoColor=white">
+  <img src="https://img.shields.io/badge/Aprendizado-Prático-2496ED?style=flat&logo=github&logoColor=white">
+  <img src="https://img.shields.io/badge/Bootcamp-DIO%20Code%20Girls-2496ED?style=flat&logo=awslambda&logoColor=white">
+</p>
 
 ---
 
-## 🛠️ Serviços AWS Utilizados
+**AWS CodeGirls Journey** é um repositório criado para reunir **meus aprendizados, resumos e desafios práticos** desenvolvidos durante o Bootcamp **DIO Code Girls** com foco em **AWS Cloud**.
 
-* **Amazon S3** – Armazenamento de arquivos de entrada e certificados gerados.
-* **AWS Lambda** – Funções serverless para processamento e envio.
-* **Amazon RDS** – Banco de dados para auditoria, controle de eventos e usuários.
-* **Amazon SQS** – Orquestração e comunicação entre Lambdas.
+O objetivo é centralizar tudo o que venho aprendendo — desde conceitos fundamentais da nuvem até práticas com serviços como **Lambda, S3, Step Functions, DynamoDB, API Gateway** e muito mais.
+
+> Aqui estão as minhas resoluções dos desafios e algumas anotações do meu aprendizado durante o bootcamp. ✨
 
 ---
 
-## 📊 Arquitetura
+### 🗂️ Estrutura do Repositório
 
-O fluxo completo da solução está representado no diagrama abaixo:
+| Pasta | Conteúdo |
+|-------|-----------|
+| `aws-diagram-certificates/` | Modelagem de arquitetura AWS para geração e envio automatizado de certificados digitais |
+| `aws-step-functions/` | Processamento paralelo e distribuído de pedidos com validação, aplicação de regras de preço e registro em DynamoDB |
 
-<img src="AWS diagram certificates.svg" alt="Diagrama da Arquitetura" width="700"/>
+---
+
+### Desafios Práticos
+
+Aqui estão alguns dos desafios que desenvolvi ao longo do Bootcamp:
+
+* [**AWS Diagram Certificates**](./aws-diagram-certificates/README.md) → modelagem de arquitetura AWS para geração e envio automatizado de certificados digitais
+* [**Distributed Orders Processor (Step Functions)**](./aws-step-functions/README.md) → processamento paralelo e distribuído de pedidos com validação, aplicação de regras de preço e registro em DynamoDB
+
+---
+
+<div align="center">
+
+Feito com 🩵 por [**Natália**](https://github.com/nataliatsi)
+
+</div>
